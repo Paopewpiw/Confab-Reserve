@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1F4E79">
+  <title>Confab Reserve — Annex Library</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main class="app-shell">
+  <header class="desktop-heading">
+    <div class="brand-mark">CR</div>
+    <div><strong>Confab Reserve</strong><small>Annex Library room reservation</small></div>
+    <span class="demo-tag">UI DEMO</span>
+  </header>
+
+  <div class="device">
+    <div class="device-status"><span>9:41</span><span>● ● ●　▰</span></div>
+    <div class="screen-stack">
+      <!-- SCREEN 1 -->
+      <section class="screen" id="screen-1" data-screen="1">
+        <div class="auth-screen">
+          <div class="auth-brand"><h1>Confab Reserve</h1><p>Annex Library confab rooms</p></div>
+          <form id="login-form" class="form-stack">
+            <label>Email<input type="email" id="login-email" placeholder="student@my.xu.edu.ph" required></label>
+            <label>Password<input type="password" id="login-password" placeholder="••••••••" required></label>
+            <button class="btn primary full" type="submit">Confab Reserve</button>
+          </form>
+          <button class="text-button" data-go="2">Create an account</button>
+          <button class="muted-button" data-go="3">Continue as Guest</button>
+          <p class="hint">Guests can browse rooms and availability.</p>
+        </div>
+      </section>
+
+      <!-- SCREEN 2 -->
+      <section class="screen" id="screen-2" data-screen="2">
+        <header class="topbar"><button class="back-btn" data-back>←</button><h2>Create Account</h2></header>
+        <form id="register-form" class="screen-content form-stack">
+          <label>Full Name<input id="reg-name" required placeholder="Juan Dela Cruz"></label>
+          <label>Student ID<input id="reg-id" required placeholder="2024XXXXXX"></label>
+          <label>College<select id="reg-college" required><option value="">Select College ▼</option><option>College of Computer Studies</option><option>College of Arts and Sciences</option><option>College of Business</option><option>College of Education</option><option>Other</option></select></label>
+          <label>Email<input id="reg-email" type="email" required placeholder="student@my.xu.edu.ph"></label>
+          <label>Password<input id="reg-password" type="password" required minlength="6" placeholder="At least 6 characters"></label>
+          <button class="btn primary full" type="submit">Register</button>
+          <button class="text-button" type="button" data-go="1">Already have an account? Log in</button>
+          <p class="hint center">Your details link each reservation to you.</p>
+        </form>
+      </section>
+
+      <!-- SCREEN 3 -->
+      <section class="screen" id="screen-3" data-screen="3">
+        <header class="topbar"><span></span><h2>Confab Rooms</h2><span></span></header>
+        <div class="screen-content">
+          <div class="date-navigator"><button id="rooms-prev">◀</button><strong id="rooms-date-label">Today, Mon 3 Nov</strong><button id="rooms-next">▶</button></div>
+          <div id="room-list" class="room-list"></div>
+        </div>
+        <nav class="bottom-nav student-nav">
+          <button class="nav-item selected" data-go="3"><span>●</span>Rooms</button>
+          <button class="nav-item" data-go="7"><span>●</span>My Reserv.</button>
+          <button class="nav-item" data-go="9"><span>●</span>Alerts</button>
+          <button class="nav-item" data-go="10"><span>●</span>Profile</button>
+        </nav>
+      </section>
+
+      <!-- SCREEN 4 -->
+      <section class="screen" id="screen-4" data-screen="4">
+        <header class="topbar"><button class="back-btn" data-go="3">←</button><h2 id="availability-title">Confab Room A</h2><span></span></header>
+        <div class="screen-content">
+          <p class="subline" id="availability-capacity">Capacity up to 8 · Annex Library</p>
+          <div class="weekday-strip" id="weekday-strip"></div>
+          <h3>Selected time slot(s)</h3>
+          <div class="slot-grid" id="slot-grid"></div>
+          <p class="selection-summary" id="selection-summary">Select an available time slot.</p>
+          <button class="btn primary full" id="reserve-selected">Confab Reserve</button>
+          <p class="hint center">Guests are asked to log in first.</p>
+        </div>
+      </section>
+
+      <!-- SCREEN 5 -->
+      <section class="screen" id="screen-5" data-screen="5">
+        <header class="topbar"><button class="back-btn" data-go="4">←</button><h2>Reserve Room</h2></header>
+        <form id="reservation-form" class="screen-content form-stack">
+          <div class="booking-summary" id="booking-summary"></div>
+          <label>Reserved by<input id="booking-name" placeholder="Your name" readonly></label>
+          <label>Number of Attendees (Max <span id="attendee-max">8</span>)<input id="attendees" type="number" min="1" value="5" required></label>
+          <label>Purpose<textarea id="purpose" rows="2" required placeholder="Group discussion, project meeting..."></textarea></label>
+          <div class="notice">Max 2 Hours per reservation limit on active reservation per student.</div>
+          <button class="btn primary full" type="submit">Confirm Reservation</button>
+          <button class="muted-button" type="button" data-go="4">Cancel</button>
+        </form>
+      </section>
+
+      <!-- SCREEN 6 -->
+      <section class="screen" id="screen-6" data-screen="6">
+        <div class="confirmation-content">
+          <div class="success-icon">✓</div>
+          <h2>Reservation Confirmed!</h2>
+          <p class="blue-text">A reminder will be sent for your slot</p>
+          <div class="details-card" id="confirmation-details"></div>
+          <button class="btn primary full" data-go="7">View my reservations</button>
+          <button class="btn outline full" data-go="3">Back to Rooms</button>
+        </div>
+      </section>
+
+      <!-- SCREEN 7 -->
+      <section class="screen" id="screen-7" data-screen="7">
+        <header class="topbar"><span></span><h2>My Reservations</h2><span></span></header>
+        <div class="screen-content">
+          <div class="tabs"><button class="tab active" data-res-tab="upcoming">Upcoming</button><button class="tab" data-res-tab="past">Past</button></div>
+          <div id="my-reservations" class="reservation-list"></div>
+        </div>
+        <nav class="bottom-nav student-nav">
+          <button class="nav-item" data-go="3"><span>●</span>Rooms</button>
+          <button class="nav-item selected" data-go="7"><span>●</span>My Reserv.</button>
+          <button class="nav-item" data-go="9"><span>●</span>Alerts</button>
+          <button class="nav-item" data-go="10"><span>●</span>Profile</button>
+        </nav>
+      </section>
+
+      <!-- SCREEN 8 -->
+      <section class="screen" id="screen-8" data-screen="8">
+        <header class="topbar"><button class="back-btn" data-go="7">←</button><h2>Reservation Details</h2><span></span></header>
+        <div class="screen-content">
+          <div class="details-card large" id="reservation-detail-card"></div>
+          <div id="cancel-area">
+            <button class="btn danger full" id="remove-reservation">Remove</button>
+            <button class="btn outline full" data-go="7">Keep</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCREEN 9 -->
+      <section class="screen" id="screen-9" data-screen="9">
+        <header class="topbar"><span></span><h2>Notifications</h2><span></span></header>
+        <div class="screen-content"><div id="notification-list" class="notification-list"></div></div>
+        <nav class="bottom-nav student-nav">
+          <button class="nav-item" data-go="3"><span>●</span>Rooms</button>
+          <button class="nav-item" data-go="7"><span>●</span>My Reserv.</button>
+          <button class="nav-item selected" data-go="9"><span>●</span>Alerts</button>
+          <button class="nav-item" data-go="10"><span>●</span>Profile</button>
+        </nav>
+      </section>
+
+      <!-- SCREEN 10 -->
+      <section class="screen" id="screen-10" data-screen="10">
+        <header class="topbar"><span></span><h2>Profile</h2><span></span></header>
+        <div class="screen-content profile-content">
+          <div class="avatar" id="profile-avatar">JD</div>
+          <h2 id="profile-name">Guest Student</h2><p class="secondary" id="profile-role">Student</p>
+          <div class="profile-info" id="profile-info"></div>
+          <button class="btn danger-outline full" id="logout-btn">Log Out</button>
+        </div>
+        <nav class="bottom-nav student-nav">
+          <button class="nav-item" data-go="3"><span>●</span>Rooms</button>
+          <button class="nav-item" data-go="7"><span>●</span>My Reserv.</button>
+          <button class="nav-item" data-go="9"><span>●</span>Alerts</button>
+          <button class="nav-item selected" data-go="10"><span>●</span>Profile</button>
+        </nav>
+      </section>
+
+      <!-- SCREEN 11 -->
+      <section class="screen" id="screen-11" data-screen="11">
+        <header class="topbar"><span></span><h2>All Reservations</h2><span></span></header>
+        <div class="screen-content admin-content">
+          <div class="date-navigator"><button id="admin-prev">◀</button><strong id="admin-date-label">Mon 3 Nov 2026</strong><button id="admin-next">▶</button></div>
+          <div class="filter-pills" id="admin-filters"><button class="active" data-filter="All">All</button><button data-filter="Room A">Room A</button><button data-filter="Room B">Room B</button><button data-filter="Room C">Room C</button></div>
+          <div id="admin-reservations" class="admin-res-list"></div>
+        </div>
+        <nav class="bottom-nav admin-nav">
+          <button class="nav-item selected" data-go="11"><span>●</span>Reserv.</button>
+          <button class="nav-item" data-go="13"><span>●</span>Rooms</button>
+          <button class="nav-item" data-go="16"><span>●</span>Blocks</button>
+          <button class="nav-item" data-go="15"><span>●</span>Rules</button>
+        </nav>
+      </section>
+
+      <!-- SCREEN 12 -->
+      <section class="screen" id="screen-12" data-screen="12">
+        <header class="topbar"><button class="back-btn" data-go="11">←</button><h2>Reservations Details</h2><span></span></header>
+        <div class="screen-content admin-content">
+          <div class="details-card large" id="admin-detail-card"></div>
+          <label class="reason-label">Reason for cancelling<input id="staff-cancel-reason" placeholder="Enter reason"></label>
+          <button class="btn danger full" id="staff-cancel">Cancel Reservation</button>
+        </div>
+      </section>
+
+      <!-- SCREEN 13 -->
+      <section class="screen" id="screen-13" data-screen="13">
+        <header class="topbar"><span></span><h2>Manage Rooms</h2><span></span></header>
+        <div class="screen-content admin-content">
+          <div id="manage-room-list" class="manage-room-list"></div>
+          <button class="fab" id="add-room" aria-label="Add room">+</button>
+        </div>
+        <nav class="bottom-nav admin-nav">
+          <button class="nav-item" data-go="11"><span>●</span>Reserv.</button>
+          <button class="nav-item selected" data-go="13"><span>●</span>Rooms</button>
+          <button class="nav-item" data-go="16"><span>●</span>Blocks</button>
+          <button class="nav-item" data-go="15"><span>●</span>Rules</button>
+        </nav>
+      </section>
+
+      <!-- SCREEN 14 -->
+      <section class="screen" id="screen-14" data-screen="14">
+        <header class="topbar"><button class="back-btn" data-go="13">←</button><h2 id="room-editor-title">Edit Rooms</h2><span></span></header>
+        <form id="room-form" class="screen-content form-stack admin-content">
+          <label>Room Name<input id="edit-room-name" required placeholder="Confab Room A"></label>
+          <label>Capacity (max attendees)<input id="edit-room-capacity" type="number" min="1" required></label>
+          <label>Description/Notes<textarea id="edit-room-description" rows="3"></textarea></label>
+          <div class="switch-row"><span>Room is active</span><label class="switch"><input id="edit-room-active" type="checkbox" checked><span></span></label></div>
+          <button class="btn primary full" type="submit">Save Room</button>
+          <button class="btn danger-outline full" type="button" id="delete-room">Delete Room</button>
+          <p class="hint center">Rooms with upcoming reservations cannot be deleted.</p>
+        </form>
+      </section>
+
+      <!-- SCREEN 15 -->
+      <section class="screen" id="screen-15" data-screen="15">
+        <header class="topbar"><span></span><h2>Booking Rules</h2><span></span></header>
+        <form id="rules-form" class="screen-content form-stack admin-content">
+          <div class="two-fields">
+            <label>Opening time<input id="rule-open" type="time" value="05:00"></label>
+            <label>Closing time<input id="rule-close" type="time" value="20:00"></label>
+            <label>Slot length<select id="rule-slot"><option value="60">1 Hour</option><option value="30">30 Minutes</option><option value="120">2 Hours</option></select></label>
+            <label>Max slots/booking<input id="rule-max-slots" type="number" min="1" value="2"></label>
+            <label>Active per student<input id="rule-active" type="number" min="1" value="2"></label>
+            <label>Book ahead (days)<input id="rule-days" type="number" min="1" value="7"></label>
+          </div>
+          <label>Reminder before slot (minutes)<input id="rule-reminder" type="number" value="30"></label>
+          <label>Keep past reservations (days)<input id="rule-history" type="number" value="30"></label>
+          <div class="notice">Applies to new reservations only. Existing ones are not affected.</div>
+          <button class="btn primary full" type="submit">Save Rules</button>
+        </form>
+        <nav class="bottom-nav admin-nav">
+          <button class="nav-item" data-go="11"><span>●</span>Reserv.</button>
+          <button class="nav-item" data-go="13"><span>●</span>Rooms</button>
+          <button class="nav-item" data-go="16"><span>●</span>Blocks</button>
+          <button class="nav-item selected" data-go="15"><span>●</span>Rules</button>
+        </nav>
+      </section>
+
+      <!-- SCREEN 16 -->
+      <section class="screen" id="screen-16" data-screen="16">
+        <header class="topbar"><button class="back-btn" data-go="11">←</button><h2>Back Time Slots</h2></header>
+        <form id="block-form" class="screen-content form-stack admin-content">
+          <label>Room<select id="block-room"></select></label>
+          <label>Date<input id="block-date" type="date" required></label>
+          <div class="two-fields">
+            <label>From<input id="block-from" type="time" value="13:00" required></label>
+            <label>To<input id="block-to" type="time" value="15:00" required></label>
+          </div>
+          <label>Reason<input id="block-reason" required placeholder="Study / Maintenance / Event"></label>
+          <button class="btn primary full" type="submit">Block slot</button>
+          <h3>Current Blocks</h3>
+          <div id="current-blocks" class="current-blocks"></div>
+        </form>
+        <nav class="bottom-nav admin-nav">
+          <button class="nav-item" data-go="11"><span>●</span>Reserv.</button>
+          <button class="nav-item" data-go="13"><span>●</span>Rooms</button>
+          <button class="nav-item selected" data-go="16"><span>●</span>Blocks</button>
+          <button class="nav-item" data-go="15"><span>●</span>Rules</button>
+        </nav>
+      </section>
+    </div>
+    <div class="device-home"></div>
+  </div>
+  <p class="outside-note">Interactive front-end prototype · Sample data only · No database connected</p>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-card"><h3 id="modal-title">Confirm action</h3><p id="modal-message"></p><div class="modal-actions"><button class="btn outline" id="modal-no">Keep</button><button class="btn danger" id="modal-yes">Confirm</button></div></div>
+</div>
+<script src="js/script.js"></script>
+</body>
+</html>
