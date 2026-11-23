@@ -1,5 +1,3 @@
-/* Supabase Auth integration for Confab Reserve.
-   Profile rows are created by the project's auth.users trigger. */
 (function (global) {
   let client = null;
   function getClient() {
