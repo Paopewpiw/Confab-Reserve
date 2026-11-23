@@ -12,7 +12,7 @@
   <header class="desktop-heading">
     <div class="brand-mark">CR</div>
     <div><strong>Confab Reserve</strong><small>Annex Library room reservation</small></div>
-    <span class="demo-tag">UI DEMO</span>
+    <span class="demo-tag">SUPABASE AUTH</span>
   </header>
 
   <div class="device">
@@ -25,7 +25,7 @@
           <form id="login-form" class="form-stack">
             <label>Email<input type="email" id="login-email" placeholder="student@my.xu.edu.ph" required></label>
             <label>Password<input type="password" id="login-password" placeholder="••••••••" required></label>
-            <button class="btn primary full" type="submit">Confab Reserve</button>
+            <button class="btn primary full" type="submit">Log In</button>
           </form>
           <button class="text-button" data-go="2">Create an account</button>
           <button class="muted-button" data-go="3">Continue as Guest</button>
@@ -38,9 +38,9 @@
         <header class="topbar"><button class="back-btn" data-back>←</button><h2>Create Account</h2></header>
         <form id="register-form" class="screen-content form-stack">
           <label>Full Name<input id="reg-name" required placeholder="Juan Dela Cruz"></label>
-          <label>Student ID<input id="reg-id" required placeholder="2024XXXXXX"></label>
+          <label>Student ID<input id="reg-id" type="text" required inputmode="numeric" pattern="2026[0-9]{4}" minlength="8" maxlength="8" title="Enter an 8-digit student ID starting with 2026, for example 20261234." placeholder="20261234" autocomplete="off"><small class="hint">Required format: 2026xxxx (exactly 8 digits; numbers only).</small></label>
           <label>College<select id="reg-college" required><option value="">Select College ▼</option><option>College of Computer Studies</option><option>College of Arts and Sciences</option><option>College of Business</option><option>College of Education</option><option>Other</option></select></label>
-          <label>Email<input id="reg-email" type="email" required placeholder="student@my.xu.edu.ph"></label>
+          <label>Email<input id="reg-email" type="email" required pattern="[A-Za-z]+@my\.xu\.edu\.ph" title="Use firstnamelastname@my.xu.edu.ph. Use letters only before @my.xu.edu.ph." placeholder="firstnamelastname@my.xu.edu.ph" autocomplete="email"><small class="hint">Required format: firstnamelastname@my.xu.edu.ph (letters only, no spaces, numbers, dots, or symbols).</small></label>
           <label>Password<input id="reg-password" type="password" required minlength="6" placeholder="At least 6 characters"></label>
           <button class="btn primary full" type="submit">Register</button>
           <button class="text-button" type="button" data-go="1">Already have an account? Log in</button>
@@ -151,10 +151,17 @@
           <div class="profile-info" id="profile-info"></div>
           <button class="btn danger-outline full" id="logout-btn">Log Out</button>
         </div>
-        <nav class="bottom-nav student-nav">
+        <nav class="bottom-nav student-nav" id="student-profile-nav">
           <button class="nav-item" data-go="3"><span>●</span>Rooms</button>
           <button class="nav-item" data-go="7"><span>●</span>My Reserv.</button>
           <button class="nav-item" data-go="9"><span>●</span>Alerts</button>
+          <button class="nav-item selected" data-go="10"><span>●</span>Profile</button>
+        </nav>
+        <nav class="bottom-nav admin-nav" id="admin-profile-nav" style="display:none">
+          <button class="nav-item" data-go="11"><span>●</span>Reserv.</button>
+          <button class="nav-item" data-go="13"><span>●</span>Rooms</button>
+          <button class="nav-item" data-go="16"><span>●</span>Blocks</button>
+          <button class="nav-item" data-go="15"><span>●</span>Rules</button>
           <button class="nav-item selected" data-go="10"><span>●</span>Profile</button>
         </nav>
       </section>
@@ -172,6 +179,7 @@
           <button class="nav-item" data-go="13"><span>●</span>Rooms</button>
           <button class="nav-item" data-go="16"><span>●</span>Blocks</button>
           <button class="nav-item" data-go="15"><span>●</span>Rules</button>
+                  <button class="nav-item" data-go="10"><span>●</span>Profile</button>
         </nav>
       </section>
 
@@ -197,6 +205,7 @@
           <button class="nav-item selected" data-go="13"><span>●</span>Rooms</button>
           <button class="nav-item" data-go="16"><span>●</span>Blocks</button>
           <button class="nav-item" data-go="15"><span>●</span>Rules</button>
+                  <button class="nav-item" data-go="10"><span>●</span>Profile</button>
         </nav>
       </section>
 
@@ -207,7 +216,7 @@
           <label>Room Name<input id="edit-room-name" required placeholder="Confab Room A"></label>
           <label>Capacity (max attendees)<input id="edit-room-capacity" type="number" min="1" required></label>
           <label>Description/Notes<textarea id="edit-room-description" rows="3"></textarea></label>
-          <div class="switch-row"><span>Room is active</span><label class="switch"><input id="edit-room-active" type="checkbox" checked><span></span></label></div>
+          <div class="switch-row"><span id="room-active-label">Room is Active</span><label class="switch"><input id="edit-room-active" type="checkbox" checked><span></span></label></div>
           <button class="btn primary full" type="submit">Save Room</button>
           <button class="btn danger-outline full" type="button" id="delete-room">Delete Room</button>
           <p class="hint center">Rooms with upcoming reservations cannot be deleted.</p>
@@ -236,6 +245,7 @@
           <button class="nav-item" data-go="13"><span>●</span>Rooms</button>
           <button class="nav-item" data-go="16"><span>●</span>Blocks</button>
           <button class="nav-item selected" data-go="15"><span>●</span>Rules</button>
+                  <button class="nav-item" data-go="10"><span>●</span>Profile</button>
         </nav>
       </section>
 
@@ -259,17 +269,26 @@
           <button class="nav-item" data-go="13"><span>●</span>Rooms</button>
           <button class="nav-item selected" data-go="16"><span>●</span>Blocks</button>
           <button class="nav-item" data-go="15"><span>●</span>Rules</button>
+                  <button class="nav-item" data-go="10"><span>●</span>Profile</button>
         </nav>
       </section>
     </div>
     <div class="device-home"></div>
   </div>
-  <p class="outside-note">Interactive front-end prototype · Sample data only · No database connected</p>
 </main>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
   <div class="modal-card"><h3 id="modal-title">Confirm action</h3><p id="modal-message"></p><div class="modal-actions"><button class="btn outline" id="modal-no">Keep</button><button class="btn danger" id="modal-yes">Confirm</button></div></div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/services/storage-service.js"></script>
+<script src="js/services/room-service.js"></script>
+<script src="js/services/booking-service.js"></script>
+<script src="js/services/auth-service.js"></script>
+<script src="js/services/student-service.js"></script>
+<script src="js/services/admin-service.js"></script>
+<script src="js/services/supabase-data-service.js"></script>
 <script src="js/script.js"></script>
 </body>
 </html>
