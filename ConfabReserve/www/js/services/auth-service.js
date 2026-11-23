@@ -71,3 +71,4 @@
   }
   global.ConfabAuthService = { getClient, signIn, signUp, signOut, restoreSession, profileFor, onAuthStateChange, isXuStudentEmail, isValidStudentId };
 })(window);
+
