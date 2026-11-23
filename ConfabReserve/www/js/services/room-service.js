@@ -1,4 +1,3 @@
-/* Room availability helpers. Slot checks use the configured interval, not hard-coded hours. */
 (function (global) {
   const minutes = value => { const [h,m]=String(value).slice(0,5).split(':').map(Number); return h*60+m; };
   function overlaps(startA, endA, startB, endB) { return startA < endB && startB < endA; }
