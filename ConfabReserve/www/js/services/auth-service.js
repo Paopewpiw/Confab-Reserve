@@ -30,13 +30,28 @@
     try { return { user: await profileFor(data.user), session: data.session }; }
     catch (e) { await getClient().auth.signOut(); return { error: e.message }; }
   }
+  function isValidStudentId(studentId) {
+    return /^2026[0-9]{4}$/.test(String(studentId || '').trim());
+  }
+  function isXuStudentEmail(email) {
+    // Accept only addresses ending in the official student subdomain.
+    return /^[A-Z]+@my\.xu\.edu\.ph$/i.test(String(email || '').trim());
+  }
   async function signUp(input) {
+    const email = String(input.email || '').trim();
+    const studentId = String(input.studentId || '').trim();
+    if (!isValidStudentId(studentId)) {
+      return { error: 'Student ID must contain exactly 8 digits and start with 2026 (example: 20261234).' };
+    }
+    if (!isXuStudentEmail(email)) {
+      return { error: 'Use your XU student email in this format: firstnamelastname@my.xu.edu.ph (letters only before @my.xu.edu.ph).' };
+    }
     const { data, error } = await getClient().auth.signUp({
-      email: input.email.trim(), password: input.password,
-      options: { data: { full_name: input.name.trim(), student_id: input.studentId.trim(), college: input.college } }
+      email, password: input.password,
+      options: { data: { full_name: input.name.trim(), student_id: studentId, college: input.college } }
     });
     if (error) return { error: error.message };
-    if (!data.session) return { needsEmailConfirmation: true, email: input.email.trim() };
+    if (!data.session) return { needsEmailConfirmation: true, email };
     try { return { user: await profileFor(data.user), session: data.session }; }
     catch (e) { return { error: e.message }; }
   }
@@ -54,5 +69,6 @@
   function onAuthStateChange(callback) {
     return getClient().auth.onAuthStateChange((event, session) => callback(event, session));
   }
-  global.ConfabAuthService = { getClient, signIn, signUp, signOut, restoreSession, profileFor, onAuthStateChange };
+  global.ConfabAuthService = { getClient, signIn, signUp, signOut, restoreSession, profileFor, onAuthStateChange, isXuStudentEmail, isValidStudentId };
 })(window);
+
