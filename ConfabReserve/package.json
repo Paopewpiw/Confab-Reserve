@@ -13,11 +13,28 @@
   "author": "Apache Cordova Team",
   "license": "Apache-2.0",
   "devDependencies": {
-    "cordova-android": "^15.1.0"
+    "cordova-android": "^15.1.0",
+    "cordova-plugin-firebasex-core": "^2.0.3",
+    "cordova-plugin-firebasex-messaging": "^2.0.3"
   },
   "cordova": {
     "platforms": [
       "android"
-    ]
+    ],
+    "plugins": {
+      "cordova-plugin-firebasex-core": {
+        "ANDROID_FIREBASE_CORE_VERSION": "21.1.1",
+        "ANDROID_FIREBASE_INSTALLATIONS_VERSION": "19.1.0",
+        "ANDROID_GSON_VERSION": "2.14.0"
+      },
+      "cordova-plugin-firebasex-messaging": {
+        "FIREBASE_FCM_AUTOINIT_ENABLED": "true",
+        "FIREBASE_MESSAGING_IMMEDIATE_PAYLOAD_DELIVERY": "false",
+        "IOS_FCM_ENABLED": "true",
+        "IOS_ENABLE_CRITICAL_ALERTS_ENABLED": "false",
+        "ANDROID_ICON_ACCENT": "#FFFFFF",
+        "ANDROID_FIREBASE_MESSAGING_VERSION": "25.0.2"
+      }
+    }
   }
 }
