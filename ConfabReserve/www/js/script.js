@@ -1,52 +1,46 @@
 const $ = (s, root=document) => root.querySelector(s);
 const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+const today = new Date(); today.setHours(0,0,0,0);
 const state = {
-  screen: 1, user: null, guest: true, selectedRoom: 1, selectedDate: new Date(2026,10,3),
+  screen: 1, user: null, guest: true, selectedRoom: null, selectedDate: today,
   selectedSlots: [], selectedReservation: null, editingRoom: null, activeResTab: 'upcoming',
-  adminFilter: 'All', adminDate: new Date(2026,10,3), roomDateOffset: 0,
-  rooms: [
-    {id:1,name:'Confab Room A',capacity:8,description:'Annex Library confab room',active:true},
-    {id:2,name:'Confab Room B',capacity:6,description:'Annex Library confab room',active:true},
-    {id:3,name:'Confab Room C',capacity:10,description:'Annex Library confab room',active:true}
-  ],
-  reservations: [
-    {id:101,roomId:1,date:'2026-11-03',start:'09:00',end:'11:00',attendees:5,purpose:'Group Discussion',name:'Larrazabal',studentId:'20002',status:'Active'},
-    {id:102,roomId:2,date:'2026-11-03',start:'10:00',end:'11:00',attendees:3,purpose:'Project Meeting',name:'Juan Dela Cruz',studentId:'20001',status:'Active'},
-    {id:103,roomId:1,date:'2026-11-03',start:'13:00',end:'14:00',attendees:4,purpose:'Thesis discussion',name:'Sample Student',studentId:'20003',status:'Active'},
-    {id:104,roomId:3,date:'2026-11-02',start:'13:00',end:'15:00',attendees:5,purpose:'Study group',name:'Sample Student',studentId:'20003',status:'Completed'}
-  ],
-  blocks: [
-    {id:1,roomId:2,date:'2026-11-05',from:'00:00',to:'23:59',reason:'Maintenance'},
-    {id:2,roomId:3,date:'2026-11-06',from:'08:00',to:'10:00',reason:'Library event'}
-  ],
-  notifications: [
-    {title:'Reminder',message:'Confab Room starts in 30 minutes',time:'10:30 AM',unread:true},
-    {title:'Cancelled By The Library',message:'Your reservation has been cancelled',time:'Yesterday',unread:false},
-    {title:'Reservation Confirmed',message:'You Confirmed Room B',time:'31st October',unread:false},
-    {title:'Reservation Cancelled',message:'You Cancelled Room C',time:'31st October',unread:false}
-  ],
+  adminFilter: 'All', adminDate: new Date(), roomDateOffset: 0,
+  rooms: [], reservations: [], publicReservations: [], blocks: [], notifications: [],
   rules:{open:'05:00',close:'20:00',slot:60,maxSlots:2,maxActive:2,days:7,reminder:30,history:30}
 };
-window.ConfabStorage.restore(state);
-function persistState(){ window.ConfabStorage.save(state); }
+function persistState(){ /* Supabase is the source of truth; do not persist shared records locally. */ }
 let toastTimer;
 function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2600)}
 function dateISO(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function prettyDate(iso){return new Date(iso+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}
 function roomById(id){return state.rooms.find(r=>r.id===Number(id))}
-function go(n){
+
+async function go(n){
   const adminScreens=[11,12,13,14,15,16];
-  if(adminScreens.includes(n)&&state.user?.role!=='admin'){toast('This section is for library staff only.');return}
-  if([7,8,9,10].includes(n)&&state.user?.role==='admin'){toast('That page is part of the student area.');go(11);return}
-  state.screen=n;$$('.screen').forEach(s=>s.classList.toggle('active',Number(s.dataset.screen)===n));if(n===3)renderRooms();if(n===4)renderAvailability();if(n===5)renderBookingForm();if(n===6)renderConfirmation();if(n===7)renderMyReservations();if(n===8)renderReservationDetail();if(n===9)renderNotifications();if(n===10)renderProfile();if(n===11)renderAdminReservations();if(n===12)renderAdminDetail();if(n===13)renderManageRooms();if(n===14)renderRoomEditor();if(n===15)renderRules();if(n===16)renderBlocks();$('.screen.active').scrollTop=0}
+  if(adminScreens.includes(n)&&state.user?.role!=='admin'){toast('This section is for library staff only.');return;}
+  if([7,8,9].includes(n)&&!state.user){toast('Please log in to access this feature.');go(1);return;}
+  if([7,8,9].includes(n)&&state.user?.role==='admin'){toast('That page is part of the student area.');go(11);return;}
+  state.screen=n;
+  $$('.screen').forEach(s=>s.classList.toggle('active',Number(s.dataset.screen)===n));
+  try {
+    if([3,4,5,6].includes(n)) await window.ConfabDataService.loadPublic(state);
+    if([7,8,9,10].includes(n)) { await window.ConfabDataService.loadPublic(state); await window.ConfabDataService.loadPrivate(state); }
+    if(adminScreens.includes(n)) await window.ConfabDataService.refresh(state);
+  } catch(err) { console.error(err); toast(err.message || 'Could not load data from Supabase.'); }
+  if(n===3)renderRooms(); if(n===4)renderAvailability(); if(n===5)renderBookingForm(); if(n===6)renderConfirmation();
+  if(n===7)renderMyReservations(); if(n===8)renderReservationDetail(); if(n===9)renderNotifications(); if(n===10)renderProfile();
+  if(n===11)renderAdminReservations(); if(n===12)renderAdminDetail(); if(n===13)renderManageRooms(); if(n===14)renderRoomEditor(); if(n===15)renderRules(); if(n===16)renderBlocks();
+  $('.screen.active').scrollTop=0;
+}
+
 function roomReservations(roomId,date){return state.reservations.filter(r=>r.roomId===roomId&&r.date===date&&r.status==='Active')}
 function isBlocked(roomId,date,time){return window.ConfabRoomService.isBlocked(state.blocks,roomId,date,time)}
 function slotStatus(roomId,date,time){return window.ConfabRoomService.slotStatus(state,roomId,date,time)}
 
-function slotsForDay(){return ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00']}
+function slotsForDay(){const out=[];const [oh,om]=state.rules.open.split(':').map(Number);const [ch,cm]=state.rules.close.split(':').map(Number);let t=oh*60+om;const end=ch*60+cm;while(t+state.rules.slot<=end){out.push(`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`);t+=state.rules.slot;}return out;}
 function timeLabel(t){let [h,m]=t.split(':').map(Number);return `${h%12||12}${m?':'+String(m).padStart(2,'0'):''} ${h<12?'AM':'PM'}`}
 function renderRooms(){
-  const date=new Date(2026,10,3+state.roomDateOffset);state.selectedDate=date;$('#rooms-date-label').textContent=state.roomDateOffset===0?'Today, '+date.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'}):date.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'});
+  const date=new Date();date.setHours(0,0,0,0);date.setDate(date.getDate()+state.roomDateOffset);state.selectedDate=date;$('#rooms-date-label').textContent=state.roomDateOffset===0?'Today, '+date.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'}):date.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'});
   $('#room-list').innerHTML=state.rooms.filter(r=>r.active).map(r=>{const free=slotsForDay().filter(t=>slotStatus(r.id,dateISO(date),t)==='available').length;return `<article class="room-card" data-room="${r.id}"><div><strong>${r.name}</strong><small>Capacity: ${r.capacity}</small></div><span class="count-pill ${free===0?'full':''}">${free===0?'Full':free+' Slots'}</span></article>`}).join('');
 }
 function renderAvailability(){
@@ -58,22 +52,101 @@ function renderSlots(date){
   $('#slot-grid').innerHTML=slotsForDay().map(t=>{const status=slotStatus(state.selectedRoom,date,t);return `<button class="slot ${status}" data-time="${t}" ${status!=='available'?'disabled':''}>${timeLabel(t)}<small>${status[0].toUpperCase()+status.slice(1)}</small></button>`}).join('');
   $('#selection-summary').textContent='Selected: none';state.selectedSlots=[];
 }
-function renderBookingForm(){const room=roomById(state.selectedRoom);const times=state.selectedSlots.slice().sort();const start=times[0],end=`${String(Number(start.slice(0,2))+times.length).padStart(2,'0')}:00`;$('#booking-summary').innerHTML=`<strong>${room.name}</strong><br>${prettyDate(dateISO(state.selectedDate))}<br>${times.map(timeLabel).join(', ')} (${times.length} slot${times.length>1?'s':''})`;$('#booking-name').value=state.user?.name||'';$('#attendee-max').textContent=room.capacity;$('#attendees').max=room.capacity;$('#attendees').value=Math.min(5,room.capacity);$('#purpose').value='';}
+function renderBookingForm(){const room=roomById(state.selectedRoom);const times=state.selectedSlots.slice().sort();const start=times[0];$('#booking-summary').innerHTML=`<strong>${room.name}</strong><br>${prettyDate(dateISO(state.selectedDate))}<br>${times.map(timeLabel).join(', ')} (${times.length} slot${times.length>1?'s':''})`;$('#booking-name').value=state.user?.name||'';$('#attendee-max').textContent=room.capacity;$('#attendees').max=room.capacity;$('#attendees').value=Math.min(5,room.capacity);$('#purpose').value='';}
 function renderConfirmation(){const r=state.reservations.find(x=>x.id===state.selectedReservation);if(!r)return;$('#confirmation-details').innerHTML=detailRows(r)}
 function detailRows(r){const room=roomById(r.roomId);return `<div class="detail-row"><span>Room:</span><strong>${room?.name||'Room'}</strong></div><div class="detail-row"><span>Date:</span><strong>${prettyDate(r.date)}</strong></div><div class="detail-row"><span>Time:</span><strong>${timeLabel(r.start)}–${timeLabel(r.end)}</strong></div><div class="detail-row"><span>Attendees:</span><strong>${r.attendees}</strong></div><div class="detail-row"><span>Status:</span><strong>${r.status}</strong></div>`}
 function renderMyReservations(){
-  const list=window.ConfabStudentService.getReservations(state,state.user?.studentId||'20001',state.activeResTab);
+  const list=state.reservations.filter(r=>r.userId===state.user?.id).filter(r=>state.activeResTab==='upcoming'?r.status==='Active':r.status!=='Active');
   $('#my-reservations').innerHTML=list.length?list.map(r=>`<article class="res-card"><div class="res-card-head"><strong>${roomById(r.roomId)?.name||'Room'}</strong><span class="status ${r.status.toLowerCase()}">${r.status}</span></div><p>${prettyDate(r.date)} · ${timeLabel(r.start)} – ${timeLabel(r.end)}</p><p>${r.attendees} Attendees</p><button data-reservation="${r.id}">Details ›</button><div style="clear:both"></div></article>`).join(''):'<p class="hint">No reservations to show.</p>';
 }
 function renderReservationDetail(){const r=state.reservations.find(x=>x.id===state.selectedReservation);if(!r)return;$('#reservation-detail-card').innerHTML=detailRows(r)+`<div class="detail-row"><span>Purpose:</span><strong>${r.purpose}</strong></div>`;$('#cancel-area').style.display=r.status==='Active'?'flex':'none'}
-function renderNotifications(){$('#notification-list').innerHTML=state.notifications.map(n=>`<article class="notification-card ${n.unread?'unread':''}"><strong>${n.title}</strong>${n.message}<small>${n.time}</small></article>`).join('')}
-function renderProfile(){const u=state.user;$('#profile-name').textContent=u?.name||'Guest Student';$('#profile-avatar').textContent=(u?.name||'GS').split(' ').map(x=>x[0]).slice(0,2).join('').toUpperCase();const roleLabel=$('#profile-role');if(roleLabel)roleLabel.textContent=u?.role==='admin'?'Library Staff / Administrator':'Student';$('#profile-info').innerHTML=`<div>${u?.role==='admin'?'Staff ID':'Student ID'}: <strong>${u?.studentId||'Guest'}</strong></div><div>${u?.role==='admin'?'Department':'College'}: <strong>${u?.college||'Not signed in'}</strong></div><div>Email: <strong>${u?.email||'—'}</strong></div>${u?.role==='admin'?'<div>Access: <strong>Admin Management</strong></div>':`<div>Active Reservation: <strong>${state.reservations.filter(r=>r.studentId===(u?.studentId||'20001')&&r.status==='Active').length}</strong></div>`}`}
-function renderAdminReservations(){const date=dateISO(state.adminDate);$('#admin-date-label').textContent=state.adminDate.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short',year:'numeric'});const rows=state.reservations.filter(r=>r.date===date&&r.status==='Active'&&(state.adminFilter==='All'||roomById(r.roomId)?.name===state.adminFilter));$('#admin-reservations').innerHTML=rows.length?rows.map(r=>`<div class="admin-row"><div><strong>${timeLabel(r.start)} · ${roomById(r.roomId)?.name}</strong><br>${r.name} · ${r.studentId}<br>Attendees: ${r.attendees}</div><button data-admin-res="${r.id}">Details</button></div>`).join(''):'<p class="hint">No reservations for this date and filter.</p>'}
+function renderNotifications(){$('#notification-list').innerHTML=state.notifications.map(n=>`<article class="notification-card ${n.unread?'unread':''}"><strong>${n.title}</strong>${n.message}<small>${n.time}</small></article>`).join('')||'<p class="hint">No notifications yet.</p>';window.ConfabDataService.markNotificationsRead(state).catch(err=>console.warn('Mark notifications read:',err.message));}
+function renderProfile() {
+  const u = state.user;
+  const isAdmin = u?.role === 'admin';
+
+  $('#student-profile-nav').style.display = isAdmin ? 'none' : 'flex';
+  $('#admin-profile-nav').style.display = isAdmin ? 'flex' : 'none';
+
+  $('#profile-name').textContent = u?.name || (isAdmin ? 'Administrator' : 'Guest Student');
+
+  $('#profile-avatar').textContent = (u?.name || 'GS')
+    .split(' ')
+    .map(x => x[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  const roleLabel = $('#profile-role');
+  if (roleLabel) {
+    roleLabel.textContent = isAdmin
+      ? 'Library Staff / Administrator'
+      : 'Student';
+  }
+
+  if (isAdmin) {
+    $('#profile-info').innerHTML = `
+      <div>Staff ID: <strong>Administrator</strong></div>
+      <div>Department: <strong>Library Administration</strong></div>
+      <div>Email: <strong>${u?.email || '—'}</strong></div>
+      <div>Access: <strong>Admin Management</strong></div>
+    `;
+  } else {
+    const activeReservations = state.reservations.filter(
+      r => r.userId === u?.id && r.status === 'Active'
+    ).length;
+
+    $('#profile-info').innerHTML = `
+      <div>Student ID: <strong>${u?.studentId || '—'}</strong></div>
+      <div>College: <strong>${u?.college || '—'}</strong></div>
+      <div>Email: <strong>${u?.email || '—'}</strong></div>
+      <div>Active Reservation: <strong>${activeReservations}</strong></div>
+    `;
+  }
+}
+
+function renderAdminReservations() {
+  const date = dateISO(state.adminDate);
+
+  $('#admin-date-label').textContent =
+    state.adminDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+
+  const rows = state.reservations.filter(r => {
+    if (r.date !== date || r.status !== 'Active') return false;
+
+    if (state.adminFilter === 'All') return true;
+
+    const roomName = roomById(r.roomId)?.name || '';
+
+    // Match shortened filter labels with full room names.
+    return roomName.toLowerCase().endsWith(
+      state.adminFilter.toLowerCase()
+    );
+  });
+
+  $('#admin-reservations').innerHTML = rows.length
+    ? rows.map(r => `
+        <div class="admin-row">
+          <div>
+            <strong>${timeLabel(r.start)} · ${roomById(r.roomId)?.name}</strong>
+            <br>${r.name} · ${r.studentId}
+            <br>Attendees: ${r.attendees}
+          </div>
+          <button data-admin-res="${r.id}">Details</button>
+        </div>
+      `).join('')
+    : '<p class="hint">No reservations for this date and filter.</p>';
+}
 function renderAdminDetail(){const r=state.reservations.find(x=>x.id===state.selectedReservation);if(!r)return;$('#admin-detail-card').innerHTML=detailRows(r)+`<div class="detail-row"><span>Reserved by:</span><strong>${r.name}</strong></div><div class="detail-row"><span>Student ID:</span><strong>${r.studentId}</strong></div><div class="detail-row"><span>College:</span><strong>${r.college||'College Name'}</strong></div><div class="detail-row"><span>Purpose:</span><strong>${r.purpose}</strong></div>`}
 function renderManageRooms(){$('#manage-room-list').innerHTML=state.rooms.map(r=>`<div class="manage-card"><strong>${r.name}</strong><small>Capacity ${r.capacity}</small><div class="manage-actions"><button class="edit-link" data-edit-room="${r.id}">Edit</button><label class="switch"><input type="checkbox" data-toggle-room="${r.id}" ${r.active?'checked':''}><span></span></label></div></div>`).join('')}
-function renderRoomEditor(){const r=state.rooms.find(x=>x.id===state.editingRoom);$('#room-editor-title').textContent=r?'Edit Rooms':'Add Room';$('#edit-room-name').value=r?.name||'';$('#edit-room-capacity').value=r?.capacity||'';$('#edit-room-description').value=r?.description||'';$('#edit-room-active').checked=r?.active??true;$('#delete-room').style.display=r?'block':'none'}
+function renderRoomEditor(){const r=state.rooms.find(x=>x.id===state.editingRoom);$('#room-editor-title').textContent=r?'Edit Rooms':'Add Room';$('#edit-room-name').value=r?.name||'';$('#edit-room-capacity').value=r?.capacity||'';$('#edit-room-description').value=r?.description||'';$('#edit-room-active').checked=r?.active??true;$('#room-active-label').textContent=($('#edit-room-active').checked?'Room is Active':'Room Inactive');$('#delete-room').style.display=r?'block':'none'}
 function renderRules(){const r=state.rules;$('#rule-open').value=r.open;$('#rule-close').value=r.close;$('#rule-slot').value=r.slot;$('#rule-max-slots').value=r.maxSlots;$('#rule-active').value=r.maxActive;$('#rule-days').value=r.days;$('#rule-reminder').value=r.reminder;$('#rule-history').value=r.history}
-function renderBlocks(){$('#block-room').innerHTML=state.rooms.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');if(!$('#block-date').value)$('#block-date').value='2026-11-05';$('#current-blocks').innerHTML=state.blocks.map(b=>`<div class="current-block"><span>${roomById(b.roomId)?.name} · ${prettyDate(b.date)}<br>${b.from==='00:00'&&b.to==='23:59'?'All day':timeLabel(b.from)+'–'+timeLabel(b.to)} · ${b.reason}</span><button data-remove-block="${b.id}">Remove</button></div>`).join('')||'<p class="hint">No current blocks.</p>'}
+function renderBlocks(){$('#block-room').innerHTML=state.rooms.map(r=>`<option value="${r.id}">${r.name}</option>`).join('');if(!$('#block-date').value)$('#block-date').value=dateISO(new Date());$('#current-blocks').innerHTML=state.blocks.map(b=>`<div class="current-block"><span>${roomById(b.roomId)?.name} · ${prettyDate(b.date)}<br>${b.from==='00:00'&&b.to==='23:59'?'All day':timeLabel(b.from)+'–'+timeLabel(b.to)} · ${b.reason}</span><button data-remove-block="${b.id}">Remove</button></div>`).join('')||'<p class="hint">No current blocks.</p>'}
 function openModal(title,message,yes){$('#modal-title').textContent=title;$('#modal-message').textContent=message;$('#modal').classList.remove('hidden');$('#modal-yes').onclick=()=>{$('#modal').classList.add('hidden');yes()};$('#modal-no').onclick=()=>$('#modal').classList.add('hidden')}
 function isOverlap(a,b,c,d){return a<d&&c<b}
 
@@ -89,7 +162,7 @@ document.addEventListener('click',e=>{
  const tab=e.target.closest('[data-res-tab]');if(tab){state.activeResTab=tab.dataset.resTab;$$('[data-res-tab]').forEach(x=>x.classList.toggle('active',x===tab));renderMyReservations();return}
  const filter=e.target.closest('[data-filter]');if(filter){state.adminFilter=filter.dataset.filter;$$('[data-filter]').forEach(x=>x.classList.toggle('active',x===filter));renderAdminReservations();return}
  const edit=e.target.closest('[data-edit-room]');if(edit){state.editingRoom=Number(edit.dataset.editRoom);go(14);return}
- const remove=e.target.closest('[data-remove-block]');if(remove){window.ConfabAdminService.removeBlock(state,remove.dataset.removeBlock);persistState();renderBlocks();toast('Block removed.');return}
+ const remove=e.target.closest('[data-remove-block]');if(remove){window.ConfabDataService.removeBlock(Number(remove.dataset.removeBlock)).then(async result=>{if(result.error){toast(result.error);return;}await window.ConfabDataService.loadPublic(state);renderBlocks();toast('Block removed.');});return}
 });
 $('#rooms-prev').onclick=()=>{state.roomDateOffset=Math.max(0,state.roomDateOffset-1);renderRooms()};
 $('#rooms-next').onclick=()=>{state.roomDateOffset=Math.min(7,state.roomDateOffset+1);renderRooms()};
@@ -110,33 +183,49 @@ $('#login-form').onsubmit=async e=>{
 };
 $('#register-form').onsubmit=async e=>{
  e.preventDefault();
+ const email=$('#reg-email').value.trim();
+ const studentId=$('#reg-id').value.trim();
+ if(!window.ConfabAuthService.isValidStudentId(studentId)){toast('Student ID must be exactly 8 digits and start with 2026 (example: 20261234).');$('#reg-id').focus();return;}
+ if(!window.ConfabAuthService.isXuStudentEmail(email)){toast('Use firstnamelastname@my.xu.edu.ph. Enter letters only before @my.xu.edu.ph.');$('#reg-email').focus();return;}
  const button=$('#register-form button[type=submit]');button.disabled=true;
  try {
    const result=await window.ConfabAuthService.signUp({
-     name:$('#reg-name').value,studentId:$('#reg-id').value,college:$('#reg-college').value,
+     name:$('#reg-name').value,studentId:studentId,college:$('#reg-college').value,
      email:$('#reg-email').value,password:$('#reg-password').value
    });
    if(result.error){toast(result.error);return;}
-   if(result.needsEmailConfirmation){toast('Account created. Check '+result.email+' for the verification link, then log in.');go(1);return;}
-   state.user=result.user;state.guest=false;persistState();toast('Account created successfully.');go(3);
+   if(result.needsEmailConfirmation){$('#register-form').reset();toast('Account created in Supabase. Verify '+result.email+' using the link sent to your inbox, then log in.');go(1);return;}
+   state.user=result.user;state.guest=false;persistState();$('#register-form').reset();toast('Student account created successfully.');go(3);
  } catch(err){toast(err.message||'Unable to register.');}
  finally {button.disabled=false;}
 };
-$('#reservation-form').onsubmit=e=>{
- e.preventDefault();
- const result=window.ConfabBookingService.create(state,{roomId:state.selectedRoom,date:dateISO(state.selectedDate),times:state.selectedSlots,attendees:Number($('#attendees').value),purpose:$('#purpose').value});
- if(result.error){toast(result.error);if(result.error.includes('no longer available')||result.error.includes('just been reserved'))go(4);return;}
- state.selectedReservation=result.reservation.id;persistState();go(6);
+$('#reservation-form').onsubmit=async e=>{
+ e.preventDefault(); const button=$('#reservation-form button[type=submit]'); button.disabled=true;
+ try {
+  const result=await window.ConfabDataService.createReservation(state,{roomId:state.selectedRoom,date:dateISO(state.selectedDate),times:state.selectedSlots,attendees:Number($('#attendees').value),purpose:$('#purpose').value});
+  if(result.error){toast(result.error);if(/available|reserved|blocked|slot/i.test(result.error))go(4);return;}
+  state.selectedReservation=result.reservation.id; await window.ConfabDataService.loadPrivate(state); toast('Reservation saved successfully.'); go(6);
+ } catch(err){toast(err.message||'Could not save reservation.');} finally{button.disabled=false;}
 };
-$('#remove-reservation').onclick=()=>openModal('Cancel this Reservation?','This slot will be released so other students can book it.',()=>{const r=state.reservations.find(x=>x.id===state.selectedReservation);if(r){const result=window.ConfabBookingService.cancel(state,r.id,'Cancelled',`Your ${roomById(r.roomId)?.name} reservation was cancelled`);if(result.error){toast(result.error);return;}persistState()}go(7);toast('Reservation cancelled.')});
+
+$('#remove-reservation').onclick = () => {
+  if (!state.user) { toast('Please log in to cancel a reservation.'); go(1); return; }
+  if (state.user.role === 'admin') { toast('Administrators cannot cancel student reservations here.'); return; }
+  const r=state.reservations.find(x=>x.id===Number(state.selectedReservation));
+  if(!r||r.userId!==state.user.id){toast('You are not authorized to cancel this reservation.');return;}
+  if(r.status!=='Active'){toast('This reservation is no longer active.');return;}
+  openModal('Cancel this Reservation?','This slot will be released so other students can book it.',async()=>{
+    const result=await window.ConfabDataService.cancelReservation(state,r.id,'Cancelled by student');
+    if(result.error){toast(result.error);return;} await window.ConfabDataService.loadPrivate(state); go(7); toast('Reservation cancelled.');
+  });
+};
 $('#logout-btn').onclick=async()=>{try{await window.ConfabAuthService.signOut();}catch(err){toast(err.message||'Sign out failed.');return;}state.user=null;state.guest=true;persistState();toast('You have logged out.');go(1)};
-$('#staff-cancel').onclick=()=>{const r=state.reservations.find(x=>x.id===state.selectedReservation);if(!r)return;if(!$('#staff-cancel-reason').value.trim()){toast('Enter a reason for cancelling.');return}openModal('Cancel reservation?','The student will be notified of this cancellation.',()=>{r.status='Cancelled by Staff';r.cancelReason=$('#staff-cancel-reason').value;state.notifications.unshift({title:'Cancelled By The Library',message:r.cancelReason,time:'Just now',unread:true});persistState();go(11);toast('Reservation cancelled and notification added.')})};
+$('#staff-cancel').onclick=()=>{const r=state.reservations.find(x=>x.id===Number(state.selectedReservation));if(!r)return;if(!$('#staff-cancel-reason').value.trim()){toast('Enter a reason for cancelling.');return}openModal('Cancel reservation?','The student will be notified of this cancellation.',async()=>{const result=await window.ConfabDataService.cancelReservation(state,r.id,$('#staff-cancel-reason').value.trim(),true);if(result.error){toast(result.error);return;}await window.ConfabDataService.refresh(state);go(11);toast('Reservation cancelled and notification sent.')})};
 $('#add-room').onclick=()=>{state.editingRoom=null;go(14)};
-$$('[data-toggle-room]').forEach(()=>{});document.addEventListener('change',e=>{const t=e.target.closest('[data-toggle-room]');if(t){const r=roomById(t.dataset.toggleRoom);r.active=t.checked;persistState();toast(`${r.name} ${r.active?'activated':'deactivated'}.`);}});
-$('#room-form').onsubmit=e=>{e.preventDefault();const data={name:$('#edit-room-name').value.trim(),capacity:Number($('#edit-room-capacity').value),description:$('#edit-room-description').value.trim(),active:$('#edit-room-active').checked};const result=window.ConfabAdminService.saveRoom(state,state.editingRoom,data);if(result.error){toast(result.error);return;}persistState();toast('Room saved.');go(13)};
-$('#delete-room').onclick=()=>{const r=roomById(state.editingRoom);if(!r)return;const check=window.ConfabAdminService.deleteRoom({...state,rooms:[...state.rooms],reservations:state.reservations},r.id);if(check.error){toast(check.error);return}openModal('Delete room?',`Delete ${r.name}? This cannot be undone.`,()=>{window.ConfabAdminService.deleteRoom(state,r.id);persistState();go(13);toast('Room deleted.')})};
-$('#rules-form').onsubmit=e=>{e.preventDefault();state.rules={open:$('#rule-open').value,close:$('#rule-close').value,slot:Number($('#rule-slot').value),maxSlots:Number($('#rule-max-slots').value),maxActive:Number($('#rule-active').value),days:Number($('#rule-days').value),reminder:Number($('#rule-reminder').value),history:Number($('#rule-history').value)};persistState();toast('Booking rules saved.')};
-$('#block-form').onsubmit=e=>{e.preventDefault();const roomId=Number($('#block-room').value),date=$('#block-date').value,from=$('#block-from').value,to=$('#block-to').value,reason=$('#block-reason').value.trim();const result=window.ConfabAdminService.addBlock(state,{roomId,date,from,to,reason});if(result.error){toast(result.error);return}persistState();$('#block-reason').value='';renderBlocks();toast('Time slot blocked.')};
-
-
+document.addEventListener('change',async e=>{const editorSwitch=e.target.closest('#edit-room-active');if(editorSwitch){$('#room-active-label').textContent=editorSwitch.checked?'Room is Active':'Room Inactive';return;}const t=e.target.closest('[data-toggle-room]');if(t){const result=await window.ConfabDataService.setRoomActive(Number(t.dataset.toggleRoom),t.checked);if(result.error){toast(result.error);await go(13);return;}await window.ConfabDataService.loadPublic(state);renderManageRooms();toast(`Room ${t.checked?'activated':'deactivated'}.`);}});
+$('#room-form').onsubmit=async e=>{e.preventDefault();const data={name:$('#edit-room-name').value.trim(),capacity:Number($('#edit-room-capacity').value),description:$('#edit-room-description').value.trim(),active:$('#edit-room-active').checked};if(!data.name||!Number.isInteger(data.capacity)||data.capacity<1){toast('Enter a room name and valid capacity.');return;}const result=await window.ConfabDataService.saveRoom(data,state.editingRoom);if(result.error){toast(result.error);return;}await window.ConfabDataService.loadPublic(state);toast('Room saved to Supabase.');go(13)};
+$('#delete-room').onclick=()=>{const r=roomById(state.editingRoom);if(!r)return;openModal('Delete room?',`Delete ${r.name}? This cannot be undone.`,async()=>{const result=await window.ConfabDataService.deleteRoom(r.id);if(result.error){toast(result.error);return;}await window.ConfabDataService.loadPublic(state);go(13);toast('Room deleted.')})};
+$('#rules-form').onsubmit=async e=>{e.preventDefault();const rules={open:$('#rule-open').value,close:$('#rule-close').value,slot:Number($('#rule-slot').value),maxSlots:Number($('#rule-max-slots').value),maxActive:Number($('#rule-active').value),days:Number($('#rule-days').value),reminder:Number($('#rule-reminder').value),history:Number($('#rule-history').value)};if(rules.open>=rules.close||Object.values(rules).some(v=>typeof v==='number'&&(!Number.isFinite(v)||v<1))){toast('Check the booking rule values.');return;}const result=await window.ConfabDataService.saveRules(rules);if(result.error){toast(result.error);return;}await window.ConfabDataService.loadPublic(state);renderRules();toast('Booking rules saved to Supabase.')};
+$('#block-form').onsubmit=async e=>{e.preventDefault();const block={roomId:Number($('#block-room').value),date:$('#block-date').value,from:$('#block-from').value,to:$('#block-to').value,reason:$('#block-reason').value.trim()};const result=await window.ConfabDataService.addBlock(block);if(result.error){toast(result.error);return;}await window.ConfabDataService.loadPublic(state);$('#block-reason').value='';renderBlocks();toast('Time slot blocked in Supabase.')};
 go(1);
+(async()=>{try{await window.ConfabDataService.loadPublic(state);}catch(err){console.warn('Initial Supabase load:',err.message);toast('Connect to the internet to load live rooms.');}try{const restored=await window.ConfabAuthService.restoreSession();if(restored){state.user=restored;state.guest=false;await window.ConfabDataService.refresh(state);if(restored.role==='admin'){state.adminDate=new Date();go(11);}else go(3);}}catch(err){console.warn('Session restore:',err.message);}})();
