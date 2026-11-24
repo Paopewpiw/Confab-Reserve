@@ -9,14 +9,8 @@
 </head>
 <body>
 <main class="app-shell">
-  <header class="desktop-heading">
-    <div class="brand-mark">CR</div>
-    <div><strong>Confab Reserve</strong><small>Annex Library room reservation</small></div>
-    <span class="demo-tag">SUPABASE AUTH</span>
-  </header>
-
   <div class="device">
-    <div class="device-status"><span>9:41</span><span>● ● ●　▰</span></div>
+    <div class="device-status"></div>
     <div class="screen-stack">
       <!-- SCREEN 1 -->
       <section class="screen" id="screen-1" data-screen="1">
@@ -280,6 +274,7 @@
 <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
   <div class="modal-card"><h3 id="modal-title">Confirm action</h3><p id="modal-message"></p><div class="modal-actions"><button class="btn outline" id="modal-no">Keep</button><button class="btn danger" id="modal-yes">Confirm</button></div></div>
 </div>
+<script src="cordova.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-config.js"></script>
 <script src="js/services/storage-service.js"></script>
@@ -290,5 +285,6 @@
 <script src="js/services/admin-service.js"></script>
 <script src="js/services/supabase-data-service.js"></script>
 <script src="js/script.js"></script>
+<script src="js/notifications.js"></script>
 </body>
 </html>
