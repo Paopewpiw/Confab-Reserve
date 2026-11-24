@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "464472315570",
+    "project_id": "confabreserve",
+    "storage_bucket": "confabreserve.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:464472315570:android:8f763f724a21dc6402dbab",
+        "android_client_info": {
+          "package_name": "org.confabreserve.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZAO9hA-T-QNRKvAzaWCVB31MxX2pb9-4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
